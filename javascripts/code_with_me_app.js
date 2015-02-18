@@ -59,7 +59,7 @@ codeWithMeApp.controller("SidePaneCtrl", function ($scope, Session) {
 codeWithMeApp.controller("MainCtrl", function ($scope, Session, $http) {
   $scope.getRepo = function ($event) {
     $scope.repo = angular.element($event.target).scope().repo;
-    $http.get($scope.repo.contents_url.replace(/\{.*\}/, ""))
+    $scope.repo.files || $http.get($scope.repo.contents_url.replace(/\{.*\}/, ""))
           .success(function (data) {
             $scope.repo.files = data;
           })
