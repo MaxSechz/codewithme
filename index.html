@@ -1,0 +1,30 @@
+<html>
+  <head>
+    <title>Code With Me</title>
+    <script src="javascripts/angular.js"></script>
+    <script src="javascripts/code_with_me_app.js"></script>
+  </head>
+
+  <body ng-app="CodeWithMeApp">
+    <form ng-controller="UserCtrl" ng-submit="getUser()" ng-hide="hasUser">
+      <input type="text" ng-model="username" value="">
+      <button ng-click="getUser()">Sign In!</button>
+    </form>
+    <main ng-controller="MainCtrl" ng-show="hasUser" ng-click="getRepo($event)">
+      <ul ng-controller="SidePaneCtrl">
+        Repos:
+        <li ng-repeat="repo in repos">
+          {{ repo.name }}
+        </li>
+      </ul>
+      <section class="repo">
+        <ul class="files" ng-show="repo">
+          Files for {{ repo.name }}:
+          <li ng-repeat="file in repo.files">
+            {{ file.name }}
+          </li>
+        </ul>
+      </section>
+    </main>
+  </body>
+</html>
