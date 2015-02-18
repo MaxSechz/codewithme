@@ -6,21 +6,21 @@
   </head>
 
   <body ng-app="CodeWithMeApp">
-    <form ng-controller="UserCtrl" ng-submit="getUser()" ng-hide="hasUser">
-      <input type="text" ng-model="username" value="">
+    <form class="login" ng-controller="UserCtrl" ng-submit="getUser()" ng-hide="hasUser">
+      <input class="username" type="text" ng-model="username" value="">
       <button ng-click="getUser()">Sign In!</button>
     </form>
-    <main ng-controller="MainCtrl" ng-show="hasUser" ng-click="getRepo($event)">
-      <ul ng-controller="SidePaneCtrl">
+    <main class="app-view" ng-controller="MainCtrl" ng-show="hasUser" ng-click="getRepo($event)">
+      <ul class="repos" ng-controller="SidePaneCtrl">
         Repos:
-        <li ng-repeat="repo in repos">
+        <li class="repo" ng-repeat="repo in repos">
           {{ repo.name }}
         </li>
       </ul>
-      <section class="repo">
+      <section class="project">
         <ul class="files" ng-show="repo">
           Files for {{ repo.name }}:
-          <li ng-repeat="file in repo.files">
+          <li class="file" ng-repeat="file in repo.files">
             {{ file.name }}
           </li>
         </ul>
