@@ -8,6 +8,33 @@ codeWithMeApp.util.combine = function (arr1, arr2) {
   }
 };
 
+codeWithMeApp.directive("delegateClick", ['$parse', '$rootScope', function($parse, $rootScope) {
+  return {
+    restrict: 'A',
+    compile: function($element, attr) {
+      var fn = $parse(attr.delegateClick, /* interceptorFn */ null, /* expensiveChecks */ true);
+      return function ngEventHandler(scope, element) {
+        element.on("click", function(event) {
+          for (var key in attr) {
+            if (attr.hasOwnProperty(key)) {
+              var attrTest = new RegExp(attr[key].toString(), "i");
+              if (event.target[key] && !attrTest.test(event.target[key].toString())) {
+                return;
+              }
+            }
+          }
+
+          var targetScope = angular.element(event.target).scope();
+          var callback = function() {
+            fn(scope, {$event:event, $targetScope:targetScope});
+          };
+          scope.$apply(callback);
+        });
+      };
+    }
+  };
+}]);
+
 codeWithMeApp.service("Session", function ($http) {
   this.repos = [];
 
@@ -57,8 +84,8 @@ codeWithMeApp.controller("SidePaneCtrl", function ($scope, Session) {
 });
 
 codeWithMeApp.controller("MainCtrl", function ($scope, Session, $http) {
-  $scope.getRepo = function ($event) {
-    $scope.repo = angular.element($event.target).scope().repo;
+  $scope.getRepo = function ($event, $targetScope) {
+    $scope.repo = $targetScope.repo;
     $scope.repo.files || $http.get($scope.repo.contents_url.replace(/\{.*\}/, ""))
           .success(function (data) {
             $scope.repo.files = data;
