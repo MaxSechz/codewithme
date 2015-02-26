@@ -21,9 +21,9 @@
       <section class="project">
         <ul class="files" ng-show="repo">
           Files for {{ repo.name }}:
-          <li class="file" ng-repeat="(key, value) in repo.files" ng-click="subshow = true">
+          <li class="file" ng-repeat="(key, value) in repo.files" ng-click="subshow = !subshow">
             {{ key }}
-            <div tree="file" file="value">
+            <div tree="file" file="value" subshow='subshow'>
 
             </div>
             <!-- <ul class="subfiles" ng-show="subshow">

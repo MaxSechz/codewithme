@@ -57,8 +57,8 @@ codeWithMeApp.directive("recursive", function($compile) {
 
 codeWithMeApp.directive("tree", function() {
     return {
-        scope: { file: '=' },
-        template: "<ul class='subfiles' > <li class='file' ng-repeat='(key, value) in file' ng-if='value | file' ng-click='subshow = true'> {{ key }} <recursive> <div tree='file' file='value'></div> </recurisve> </li> </ul>",
+        scope: { file: '=', subshow: '=' },
+        template: "<ul class='subfiles' ng-show='subshow' > <li class='file' ng-repeat='(key, value) in file' ng-if='value | file' ng-init='subshow = false' ng-click='subshow = !subshow; $event.stopPropagation()'> {{ key }} <recursive> <div tree='file' file='value' subshow='subshow'></div> </recurisve> </li> </ul>",
         compile: function() {
             return  function() {
             };
