@@ -9,7 +9,7 @@
     <form class="login" ng-controller="UserCtrl" ng-submit="getUser()" ng-hide="hasUser">
       <input class="username" type="text" ng-model="username" value="">
       <input class="username" type="password" ng-model="password" value="">
-      <button ng-click="getUser()">Sign In!</button>
+      <button>Sign In!</button>
     </form>
     <main class="app-view" ng-controller="MainCtrl" ng-show="hasUser" delegate-click="getRepo($event, $targetScope)" tag-name="li" class-name="repo">
       <ul class="repos" ng-controller="SidePaneCtrl">
@@ -23,14 +23,8 @@
           Files for {{ repo.name }}:
           <li class="file" ng-repeat="(key, value) in repo.files" ng-click="subshow = !subshow">
             {{ key }}
-            <div tree="file" file="value" subshow='subshow'>
-
-            </div>
-            <!-- <ul class="subfiles" ng-show="subshow">
-              <li class="file" ng-repeat="file in file" ng-click="subshow = true">
-                {{ file.filename }}
-              </li>
-            </ul> -->
+            <ul class='subfiles' ng-show='subshow' tree='file'>
+            </ul>
           </li>
         </ul>
       </section>

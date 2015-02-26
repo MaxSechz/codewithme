@@ -55,12 +55,26 @@ codeWithMeApp.directive("recursive", function($compile) {
     };
 });
 
-codeWithMeApp.directive("tree", function() {
+codeWithMeApp.directive("tree", function($compile) {
     return {
-        scope: { file: '=', subshow: '=' },
-        template: "<ul class='subfiles' ng-show='subshow' > <li class='file' ng-repeat='(key, value) in file' ng-if='value | file' ng-init='subshow = false' ng-click='subshow = !subshow; $event.stopPropagation()'> {{ key }} <recursive> <div tree='file' file='value' subshow='subshow'></div> </recurisve> </li> </ul>",
-        compile: function() {
-            return  function() {
+        template:
+          "<li class='file' ng-repeat='(key, value) in value' ng-if='value | file'" +
+            "ng-init='subshow = false' ng-click='subshow = !subshow; $event.stopPropagation()'>" +
+
+            "{{ key }}" +
+            "<ul class='subfiles' ng-show='subshow' tree='file'" +
+            "</ul>" +
+          "</li>",
+        compile: function(tElement, tAttr) {
+            var contents = tElement.contents().remove();
+            var compiledContents;
+            return function(scope, iElement, iAttr) {
+                if(!compiledContents) {
+                    compiledContents = $compile(contents);
+                }
+                var result = compiledContents(scope, function(clone) {
+                    return clone; });
+                iElement.append(result);
             };
         }
     };
@@ -126,7 +140,6 @@ codeWithMeApp.controller("SidePaneCtrl", function ($scope, Session) {
 codeWithMeApp.controller("MainCtrl", function ($scope, Session, $http) {
   $scope.getRepo = function ($event, $targetScope) {
     $scope.repo = new repository($targetScope.repo);
-    console.log($scope.repo);
     $scope.repo.getCommits(null, $http);
   };
 });
@@ -145,7 +158,6 @@ repository.prototype.getCommits = function (page, $http) {
   var page = page || 0;
   repo.commits.length > 0 || $http.get(repo.commits_url.replace(/\{.*\}/, "") + queryString + page)
         .success(function (data) {
-          console.log(data);
           if (data.length === 100) {
             repo.getCommits(page + 1, $http);
           }
