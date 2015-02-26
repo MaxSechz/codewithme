@@ -8,6 +8,7 @@
   <body ng-app="CodeWithMeApp">
     <form class="login" ng-controller="UserCtrl" ng-submit="getUser()" ng-hide="hasUser">
       <input class="username" type="text" ng-model="username" value="">
+      <input class="username" type="password" ng-model="password" value="">
       <button ng-click="getUser()">Sign In!</button>
     </form>
     <main class="app-view" ng-controller="MainCtrl" ng-show="hasUser" delegate-click="getRepo($event, $targetScope)" tag-name="li" class-name="repo">
@@ -20,8 +21,16 @@
       <section class="project">
         <ul class="files" ng-show="repo">
           Files for {{ repo.name }}:
-          <li class="file" ng-repeat="file in repo.files">
-            {{ file.name }}
+          <li class="file" ng-repeat="(key, value) in repo.files" ng-click="subshow = true">
+            {{ key }}
+            <div tree="file" file="value">
+
+            </div>
+            <!-- <ul class="subfiles" ng-show="subshow">
+              <li class="file" ng-repeat="file in file" ng-click="subshow = true">
+                {{ file.filename }}
+              </li>
+            </ul> -->
           </li>
         </ul>
       </section>
