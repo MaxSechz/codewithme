@@ -152,17 +152,18 @@ var repository = function (repoData) {
  this.files = {};
 };
 
-repository.prototype.getCommits = function (page, $http) {
+repository.prototype.getCommits = function ($http, sha) {
   var repo = this;
   var queryString = "?per_page=100&page=";
-  var page = page || 0;
-  repo.commits.length > 0 || $http.get(repo.commits_url.replace(/\{.*\}/, "") + queryString + page)
+  sha = sha || '';
+  repo.commits.length > 0 || $http.get(repo.commits_url.replace(/\{.*\}/, "") + queryString + sha)
         .success(function (data) {
           if (data.length === 100) {
-            repo.getCommits(page + 1, $http);
+            repo.getCommits($http, "&sha=" + data[data.length-1].sha );
           }
           data.forEach(function (commit) {
             repo.commits.push(commit);
+            commit.date = new Date(commit.commit.author.date);
             $http.get(commit.url)
                   .success(function (data) {
                     commit.files = data.files;
