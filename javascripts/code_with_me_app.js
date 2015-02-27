@@ -8,6 +8,14 @@ codeWithMeApp.util.combine = function (arr1, arr2) {
   }
 };
 
+codeWithMeApp.util.lazyIndex = function (obj, array) {
+  var target = obj;
+  for (var i = 0; i < array.length; i++) {
+    target = target[array[i]];
+  }
+  return target;
+};
+
 codeWithMeApp.directive("delegateClick", ['$parse', '$rootScope', function($parse, $rootScope) {
   return {
     restrict: 'A',
@@ -59,7 +67,7 @@ codeWithMeApp.directive("tree", function($compile) {
     return {
         template:
           "<li class='file' ng-repeat='(key, value) in value' ng-if='value | file'" +
-            "ng-init='subshow = false' ng-click='subshow = !subshow; $event.stopPropagation()'>" +
+            "ng-init='subshow = false' ng-click='toggleSubshow(this, $event)'>" +
 
             "{{ key }}" +
             "<ul class='subfiles' ng-show='subshow' tree='file'" +
@@ -140,8 +148,31 @@ codeWithMeApp.controller("SidePaneCtrl", function ($scope, Session) {
 codeWithMeApp.controller("MainCtrl", function ($scope, Session, $http) {
   $scope.getRepo = function ($event, $targetScope) {
     $scope.repo = new repository($targetScope.repo);
-    $scope.repo.getCommits(null, $http);
+    $scope.repo.getCommits($http, null);
   };
+
+  $scope.openFile = function ($event, $targetScope) {
+    $scope.openFiles = $scope.openFiles || [];
+    !$scope.openFiles.some(function (file) {
+      return file.filename == $targetScope.value.filename;
+    }) && $targetScope.value.content && $scope.openFiles.push($targetScope.value);
+  };
+
+  $scope.prettify = function (line) {
+    return line.replace(/^\+|^-/, '');
+  };
+
+  $scope.toggleSubshow = function ($scope, $event) {
+    if (!$event.used) $scope.subshow = !$scope.subshow;
+    $event.used = true;
+  };
+  $scope.arrayify = function (obj) {
+    var arrayed = [];
+    for (var i = 1; obj[i]; i++) {
+      arrayed.push(obj[i]);
+    }
+    return arrayed;
+  }
 });
 
 var repository = function (repoData) {
@@ -160,16 +191,26 @@ repository.prototype.getCommits = function ($http, sha) {
         .success(function (data) {
           if (data.length === 100) {
             repo.getCommits($http, "&sha=" + data[data.length-1].sha );
+          } else {
+            repo.loaded = true;
           }
-          data.forEach(function (commit) {
+          for (var index = 0; index < data.length; index++) {
+            var commit = data[index];
             repo.commits.push(commit);
             commit.date = new Date(commit.commit.author.date);
-            $http.get(commit.url)
+
+            (function () {
+              var commitNum = repo.commits.length,
+                  targetCommit = commit;
+
+              $http.get(commit.url)
                   .success(function (data) {
-                    commit.files = data.files;
+                    targetCommit.files = data.files;
                     repo.addFiles(data.files);
+                    if (commitNum === repo.commits.length) repo.setupHistory();
                   });
-          });
+            })();
+          }
         })
         .error(function (data) {
           console.log(data);
@@ -181,10 +222,11 @@ repository.prototype.addFiles = function (files) {
   files.forEach(function (file) {
     var path = file.filename.split("/");
     var root = repo.files;
+    file.content = {};
     for (var index = 0; index < path.length; index++) {
       var directory = path[index];
       if (index === path.length - 1) {
-        root[directory] = file;
+        root[directory] = angular.extend({}, file);
       } else {
         root[directory] = root[directory] || {};
       }
@@ -193,4 +235,58 @@ repository.prototype.addFiles = function (files) {
       root = root[directory];
     }
   });
-}
+};
+
+repository.prototype.processCommits = function () {
+  this.commits.forEach(function (commit) {
+    commit.files.forEach(function (file) {
+      if (!file.patch) return -1;
+      file.patch = file.patch.split(/@@\s/ )
+                              .filter(function (el) { return el !== "";});
+      for (var i = 0; i < file.patch.length; i += 2) {
+          file.patch[i] = file.patch[i].split(/\D/)
+                                  .filter(function (el) { return el !== "";});
+      }
+
+      for (var j = 1; j < file.patch.length; j += 2) {
+        var lines = file.patch[j].split("\n");
+        var startLine = parseInt(file.patch[j-1][2]);
+        if (typeof file.patch[j] !== "object") file.patch[j] = {};
+        for (var line = 0; line < lines.length; line++) {
+          file.patch[j][startLine + line] = lines[line];
+        }
+      }
+    });
+  });
+};
+
+repository.prototype.loadCommit = function (index) {
+  var repo = this;
+  this.commits[index].files.forEach(function (file) {
+    if (!file.patch) return -1;
+    var name = file.filename.split("/");
+    var targetFile = codeWithMeApp.util.lazyIndex(repo.files, name);
+    console.log(targetFile);
+    for (var i = 1; i < file.patch.length; i += 2) {
+      angular.extend(targetFile.content, file.patch[i]);
+    }
+  });
+};
+
+repository.prototype.setupHistory = function () {
+  this.processCommits();
+  this.sortCommits();
+  this.loadCommit(0);
+};
+
+repository.prototype.sortCommits = function () {
+  this.commits.sort(function (commit1, commit2) {
+    if (commit1.date < commit2.date) {
+      return -1;
+    } else if (commit1.date > commit2.date) {
+      return 1;
+    } else {
+      return 0;
+    }
+  });
+};

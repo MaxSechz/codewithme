@@ -12,21 +12,32 @@
       <button>Sign In!</button>
     </form>
     <main class="app-view" ng-controller="MainCtrl" ng-show="hasUser" delegate-click="getRepo($event, $targetScope)" tag-name="li" class-name="repo">
-      <ul class="repos" ng-controller="SidePaneCtrl">
-        Repos:
-        <li class="repo" ng-repeat="repo in repos">
-          {{ repo.name }}
-        </li>
-      </ul>
-      <section class="project">
-        <ul class="files" ng-show="repo">
-          Files for {{ repo.name }}:
-          <li class="file" ng-repeat="(key, value) in repo.files" ng-click="subshow = !subshow">
-            {{ key }}
-            <ul class='subfiles' ng-show='subshow' tree='file'>
-            </ul>
+      <section delegate-click="openFile($event, $targetScope)" class-name="file">
+        <ul class="repos" ng-controller="SidePaneCtrl">
+          Repos:
+          <li class="repo" ng-repeat="repo in repos">
+            {{ repo.name }}
           </li>
         </ul>
+        <section class="project">
+          <ul class="files" ng-show="repo">
+            Files for {{ repo.name }}:
+            <li class="file" ng-repeat="(key, value) in repo.files" ng-click="toggleSubshow(this, $event)">
+              {{ key }}
+              <ul class='subfiles' ng-show='subshow' tree='file'>
+              </ul>
+            </li>
+          </ul>
+        </section>
+        <section ng-repeat="file in openFiles" class="code">
+          <ul class="content">
+            <li ng-repeat="line in arrayify(file.content) track by $index">
+              <pre>
+                {{ prettify(line) }}
+              </pre>
+            </li>
+          </ul>
+        </section>
       </section>
     </main>
   </body>
