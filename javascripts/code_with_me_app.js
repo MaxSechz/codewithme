@@ -43,6 +43,23 @@ codeWithMeApp.directive("delegateClick", ['$parse', '$rootScope', function($pars
   };
 }]);
 
+codeWithMeApp.directive("globalKeydown", ['$parse', function($parse) {
+  return {
+    restrict: 'A',
+    compile: function($element, attr) {
+      var fn = $parse(attr.globalKeydown, /* interceptorFn */ null, /* expensiveChecks */ true);
+      return function ngEventHandler(scope, element) {
+        angular.element(window).on("keydown", function(event) {
+          var callback = function() {
+            fn(scope, {$event:event});
+          };
+          scope.$apply(callback);
+        });
+      };
+    }
+  };
+}]);
+
 codeWithMeApp.directive("recursive", function($compile) {
     return {
         restrict: "E",
@@ -146,6 +163,8 @@ codeWithMeApp.controller("SidePaneCtrl", function ($scope, Session) {
 });
 
 codeWithMeApp.controller("MainCtrl", function ($scope, Session, $http) {
+  $scope.commit = 0;
+
   $scope.getRepo = function ($event, $targetScope) {
     $scope.repo = new repository($targetScope.repo);
     $scope.repo.getCommits($http, null);
@@ -156,6 +175,7 @@ codeWithMeApp.controller("MainCtrl", function ($scope, Session, $http) {
     !$scope.openFiles.some(function (file) {
       return file.filename == $targetScope.value.filename;
     }) && $targetScope.value.content && $scope.openFiles.push($targetScope.value);
+    console.log($scope.openFiles);
   };
 
   $scope.prettify = function (line) {
@@ -172,7 +192,17 @@ codeWithMeApp.controller("MainCtrl", function ($scope, Session, $http) {
       arrayed.push(obj[i]);
     }
     return arrayed;
-  }
+  };
+  $scope.moveCommit = function ($event) {
+    if (!$scope.repo || $scope.repo.updating) return;
+    if ($event.keyCode === 39 && $scope.commit !== $scope.repo.commits.length - 1) {
+      $scope.commit += 1;
+      $scope.repo.loadCommit($scope.commit);
+    } else if ($event.keyCode === 37 && $scope.commit !== 0) {
+      $scope.commit -= 1;
+      $scope.repo.loadCommit($scope.commit);
+    }
+  };
 });
 
 var repository = function (repoData) {
@@ -241,7 +271,7 @@ repository.prototype.processCommits = function () {
   this.commits.forEach(function (commit) {
     commit.files.forEach(function (file) {
       if (!file.patch) return -1;
-      file.patch = file.patch.split(/@@\s/ )
+      file.patch = file.patch.split(/ @@.*\n/ )
                               .filter(function (el) { return el !== "";});
       for (var i = 0; i < file.patch.length; i += 2) {
           file.patch[i] = file.patch[i].split(/\D/)
@@ -262,15 +292,22 @@ repository.prototype.processCommits = function () {
 
 repository.prototype.loadCommit = function (index) {
   var repo = this;
-  this.commits[index].files.forEach(function (file) {
-    if (!file.patch) return -1;
-    var name = file.filename.split("/");
-    var targetFile = codeWithMeApp.util.lazyIndex(repo.files, name);
-    console.log(targetFile);
-    for (var i = 1; i < file.patch.length; i += 2) {
-      angular.extend(targetFile.content, file.patch[i]);
+  repo.updating = true;
+  for (var j = 0; j <= index; j++) {
+    for (var t = 0; t < this.commits[j].files.length; t++) {
+      var file = this.commits[j].files[t];
+      if (file.patch) {
+        var name = file.filename.split("/");
+        var targetFile = codeWithMeApp.util.lazyIndex(repo.files, name);
+        for (var i = 1; i < file.patch.length; i += 2) {
+          angular.extend(targetFile.content, file.patch[i]);
+        }
+      }
+      if (t === this.commits[j].files.length - 1 && j === index) {
+        repo.updating = false;
+      }
     }
-  });
+  }
 };
 
 repository.prototype.setupHistory = function () {

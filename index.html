@@ -11,7 +11,7 @@
       <input class="username" type="password" ng-model="password" value="">
       <button>Sign In!</button>
     </form>
-    <main class="app-view" ng-controller="MainCtrl" ng-show="hasUser" delegate-click="getRepo($event, $targetScope)" tag-name="li" class-name="repo">
+    <main class="app-view" ng-controller="MainCtrl" global-keydown='moveCommit($event)' ng-show="hasUser" delegate-click="getRepo($event, $targetScope)" tag-name="li" class-name="repo">
       <section delegate-click="openFile($event, $targetScope)" class-name="file">
         <ul class="repos" ng-controller="SidePaneCtrl">
           Repos:
